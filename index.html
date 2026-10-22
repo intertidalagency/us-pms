@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>US-PMS Records</title>
+<meta name="description" content="Accessible browser for all records published in the us-pms Zenodo community, loaded live from Zenodo's public API.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wdth,wght@75,300..800&display=swap">
+<style>
+/* Palette from envirodatagov.org (GeneratePress): navy #00102E, teal #4DA395,
+   greys #575760 / #b2b2be / #f7f8f9, footer #393939. Teal is darkened to #287063
+   wherever it carries text on white so it meets WCAG AA (the site teal is 3:1). */
+:root {
+  --bg: #ffffff; --surface: #ffffff; --text: #00102E; --heading: #393939; --muted: #575760;
+  --border: #b2b2be; --control-border: #6D7685;
+  --brand: #4DA395; --on-brand: #00102E;
+  --accent: #287063; --accent-hover: #00102E; --accent-text: #ffffff;
+  --focus: #00102E; --chip: #e7f3f0; --stripe: #f7f8f9; --field: #f7f8f9;
+  --error-bg: #fdecea; --error: #8a1c12;
+  --radius: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #00102E; --surface: #081a3a; --text: #f7f8f9; --heading: #f7f8f9; --muted: #a9b3c4;
+    --border: #2c3d5c; --control-border: #8d97a8;
+    --accent: #4DA395; --accent-hover: #7cc7ba; --accent-text: #00102E;
+    --focus: #ffb36b; --chip: #12304a; --stripe: #0c2146; --field: #00102E;
+    --error-bg: #3a1714; --error: #ffb4a8;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #00102E; --surface: #081a3a; --text: #f7f8f9; --heading: #f7f8f9; --muted: #a9b3c4;
+  --border: #2c3d5c; --control-border: #8d97a8;
+  --accent: #4DA395; --accent-hover: #7cc7ba; --accent-text: #00102E;
+  --focus: #ffb36b; --chip: #12304a; --stripe: #0c2146; --field: #00102E;
+  --error-bg: #3a1714; --error: #ffb4a8;
+}
+* { box-sizing: border-box; }
+html { font-size: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: "Open Sans", "Open Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  font-stretch: 75%; font-size: 1.0625rem; line-height: 1.6; font-weight: 400;
+}
+h1, h2, h3 { font-weight: 700; }
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover, a:focus { color: var(--accent-hover); text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.skip {
+  position: absolute; left: 1rem; top: -100px; z-index: 10;
+  background: var(--accent); color: var(--accent-text); padding: .6rem 1rem; font-weight: 600;
+}
+.skip:focus { top: 1rem; color: var(--accent-text); }
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.wrap { max-width: 75rem; margin: 0 auto; padding: 0 1rem; }
+@media (min-width: 769px) { .wrap { padding: 0 2.5rem; } }
+header.site { background: var(--surface); border-bottom: 4px solid var(--brand); }
+header.site .wrap { padding-top: 1.5rem; padding-bottom: 1.25rem; display: flex; gap: 1rem; align-items: flex-start; }
+header.site img { width: 64px; height: 64px; object-fit: contain; flex: none; }
+header.site h1 { margin: 0 0 .35rem; font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2rem); line-height: 1.15; color: var(--heading); }
+header.site p { margin: 0; color: var(--muted); max-width: 52rem; }
+.theme-toggle { margin-left: auto; flex: none; }
+
+form.search { margin: 1.75rem 0 1rem; display: grid; gap: .75rem; grid-template-columns: 1fr; }
+@media (min-width: 720px) { form.search { grid-template-columns: 2fr 1fr 1fr auto; align-items: end; } }
+.field { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+label { font-weight: 700; font-size: 1rem; }
+input, select, button {
+  font: inherit; color: var(--text); background: var(--field);
+  border: 1px solid var(--control-border); border-radius: var(--radius); padding: .55rem .75rem; min-height: 44px;
+}
+input:focus, select:focus { border-color: var(--accent); }
+input[type="search"] { width: 100%; }
+form.search input, form.search select, form.search button { height: 2.875rem; line-height: 1.2; }
+button { cursor: pointer; font-weight: 600; background: var(--surface); }
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); padding-left: 1.4rem; padding-right: 1.4rem; }
+button.primary:hover, button.primary:focus { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-text); }
+:root[data-theme="dark"] button.primary:hover { color: #00102E; }
+.hint { color: var(--muted); font-size: .9375rem; margin: 0; }
+.form-hint { grid-column: 1 / -1; margin-top: -.25rem; }
+
+.status { margin: 1rem 0; font-weight: 700; }
+.error { background: var(--error-bg); color: var(--error); padding: 1rem; margin: 1rem 0; border-left: 4px solid currentColor; }
+.error button { margin-top: .5rem; }
+
+ol.results { list-style: none; padding: 0; margin: 0; display: grid; gap: 1.25rem; }
+article.rec {
+  background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--brand); padding: 1.25rem 1.5rem;
+}
+article.rec h2 { font-size: 1.5rem; line-height: 1.2; margin: 0 0 .5rem; }
+article.rec h2 a { color: var(--text); text-decoration: none; }
+article.rec h2 a:hover, article.rec h2 a:focus { color: var(--accent); text-decoration: underline; }
+.meta { display: flex; flex-wrap: wrap; gap: .25rem 1.1rem; color: var(--muted); font-size: 1rem; margin: 0 0 .5rem; padding: 0; list-style: none; }
+.meta li { display: inline; }
+.creators { margin: 0 0 .5rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; padding: 0; margin: .6rem 0 0; }
+.chips li { background: var(--chip); padding: .1rem .6rem; font-size: .9375rem; }
+details { margin-top: .6rem; }
+summary { cursor: pointer; color: var(--accent); font-weight: 700; min-height: 32px; }
+summary:hover { color: var(--accent-hover); }
+details .desc { margin-top: .5rem; }
+details .desc p { margin: 0 0 .6rem; }
+.files { margin: .5rem 0 0; padding-left: 1.25rem; }
+.table-wrap { overflow-x: auto; margin: .25rem 0 .9rem; border: 1px solid var(--border); }
+.table-wrap table { border-collapse: collapse; width: 100%; font-size: 1rem; }
+.table-wrap caption { text-align: left; font-weight: 700; padding: .5rem .75rem; border-bottom: 1px solid var(--border); }
+.table-wrap th, .table-wrap td { text-align: left; vertical-align: top; padding: .5rem .75rem; border-top: 1px solid var(--border); }
+.table-wrap thead th { background: var(--brand); color: var(--on-brand); border-top: none; font-weight: 700; }
+.table-wrap tbody th { font-weight: 400; overflow-wrap: anywhere; min-width: 12rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .875rem; font-stretch: normal; }
+.table-wrap tbody tr:nth-child(even) { background: var(--stripe); }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin-top: .85rem; font-weight: 600; }
+
+nav.pager { margin: 1.75rem 0 3rem; }
+nav.pager ul { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem; padding: 0; margin: 0; justify-content: center; }
+nav.pager a, nav.pager span {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px;
+  padding: 0 .85rem; border: 1px solid var(--control-border); background: var(--surface); text-decoration: none; font-weight: 600;
+}
+nav.pager a:hover { border-color: var(--accent); }
+nav.pager a[aria-current="page"] { background: var(--brand); color: var(--on-brand); border-color: var(--brand); font-weight: 700; }
+nav.pager span { border: none; background: none; }
+footer { background: #393939; color: #d4d4dc; font-size: 1rem; padding: 1.75rem 0 2.25rem; }
+footer a { color: #7cc7ba; }
+footer a:hover, footer a:focus { color: #ffffff; }
+footer :focus-visible { outline-color: #ffb36b; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+@media (forced-colors: active) { nav.pager a[aria-current="page"] { border: 3px solid CanvasText; } article.rec { border-top-width: 1px; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#results-heading">Skip to results</a>
+
+<header class="site" role="banner">
+  <div class="wrap">
+    <img id="logo" alt="" hidden>
+    <div>
+      <h1 id="community-title">US-PMS community records</h1>
+      <p id="community-desc">All records published in the us-pms community on Zenodo.</p>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false">Dark mode</button>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <form class="search" id="search-form" role="search" aria-label="Search community records">
+    <div class="field">
+      <label for="q">Search records</label>
+      <input type="search" id="q" name="q" autocomplete="off" aria-describedby="q-hint">
+    </div>
+    <div class="field">
+      <label for="type">Resource type</label>
+      <select id="type" name="type"><option value="">All types</option></select>
+    </div>
+    <div class="field">
+      <label for="sort">Sort by</label>
+      <select id="sort" name="sort">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="bestmatch">Best match</option>
+        <option value="mostviewed">Most viewed</option>
+        <option value="mostdownloaded">Most downloaded</option>
+      </select>
+    </div>
+    <div class="field">
+      <button type="submit" class="primary">Search</button>
+    </div>
+    <p class="hint form-hint" id="q-hint">Searches titles, authors, descriptions and keywords.</p>
+  </form>
+
+  <h2 id="results-heading" class="sr-only" tabindex="-1">Results</h2>
+  <p class="status" id="status" role="status" aria-live="polite">Loading records…</p>
+  <div id="error" class="error" role="alert" hidden></div>
+
+  <ol class="results" id="results" aria-labelledby="results-heading" aria-busy="true"></ol>
+
+  <nav class="pager" id="pager" aria-label="Results pages" hidden></nav>
+</main>
+
+<footer role="contentinfo">
+  <div class="wrap">
+    Data loaded live from the <a href="https://zenodo.org/communities/us-pms/records">us-pms community on Zenodo</a> via Zenodo's public API.
+    Each record links to its full page and DOI on Zenodo.
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var COMMUNITY = "us-pms";
+  var API = "https://zenodo.org/api";
+  var PAGE_SIZE = 20;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var els = {
+    form: $("search-form"), q: $("q"), type: $("type"), sort: $("sort"),
+    status: $("status"), error: $("error"), results: $("results"), pager: $("pager"),
+    heading: $("results-heading")
+  };
+  var state = { q: "", type: "", sort: "newest", page: 1 };
+  var typesLoaded = false;
+  var reqId = 0;
+
+  /* ---------- theme ---------- */
+  var root = document.documentElement, toggle = $("theme-toggle");
+  function currentDark() {
+    var t = root.getAttribute("data-theme");
+    if (t) return t === "dark";
+    return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function syncToggle() {
+    var dark = currentDark();
+    toggle.setAttribute("aria-pressed", String(dark));
+    toggle.textContent = dark ? "Light mode" : "Dark mode";
+  }
+  try { var saved = localStorage.getItem("uspms-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  syncToggle();
+  toggle.addEventListener("click", function () {
+    var next = currentDark() ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("uspms-theme", next); } catch (e) {}
+    syncToggle();
+  });
+
+  /* ---------- helpers ---------- */
+  function el(tag, attrs, children) {
+    var n = document.createElement(tag);
+    if (attrs) for (var k in attrs) {
+      if (attrs[k] == null) continue;
+      if (k === "text") n.textContent = attrs[k]; else n.setAttribute(k, attrs[k]);
+    }
+    (children || []).forEach(function (c) { if (c) n.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return n;
+  }
+  function htmlToParagraphs(html) {
+    // Parse untrusted HTML inertly, keep only text, split into paragraphs.
+    var doc = new DOMParser().parseFromString("<div>" + (html || "") + "</div>", "text/html");
+    doc.querySelectorAll("br").forEach(function (b) { b.replaceWith("\n"); });
+    doc.querySelectorAll("p, li, div, h1, h2, h3, h4, h5, h6").forEach(function (b) { b.append("\n\n"); });
+    return (doc.body.textContent || "").split(/\n{2,}/).map(function (s) { return s.replace(/\s+/g, " ").trim(); }).filter(Boolean);
+  }
+  /* ---------- description with "File Name" table ---------- */
+  var FILE_RE = /^(\S+\.[A-Za-z0-9]{1,6})\s+(.*)$/;
+  function cellText(c) {
+    var t = c.cloneNode(true);
+    t.querySelectorAll("br").forEach(function (b) { b.replaceWith(" "); });
+    return (t.textContent || "").replace(/\s+/g, " ").trim();
+  }
+  function buildTable(headers, rows, title) {
+    var n = headers.length;
+    var thead = el("thead", {}, [el("tr", {}, headers.map(function (h) { return el("th", { scope: "col", text: h }); }))]);
+    var tbody = el("tbody", {}, rows.map(function (r) {
+      var cells = r.slice(0, n); while (cells.length < n) cells.push("");
+      return el("tr", {}, cells.map(function (c, i) {
+        return i === 0 ? el("th", { scope: "row", text: c }) : el("td", { text: c });
+      }));
+    }));
+    var table = el("table", {}, [el("caption", { text: "Files described in this record" }), thead, tbody]);
+    return el("div", { class: "table-wrap", role: "region", tabindex: "0",
+      "aria-label": "Files table" + (title ? " for " + title : "") }, [table]);
+  }
+  function splitRow(line, n) {
+    var parts = line.split(/\t+|\s*\|\s*|\s{2,}/).map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length === n) return parts;
+    var m = line.match(FILE_RE);                 // file name = first token with an extension
+    if (m) {
+      if (n === 2) return [m[1], m[2]];
+      var rest = m[2].split(/\t+|\s*\|\s*|\s{2,}/);
+      return [m[1]].concat(rest.length >= n - 1 ? rest.slice(0, n - 2).concat(rest.slice(n - 2).join(" ")) : [m[2]]);
+    }
+    return null;
+  }
+  function headerCells(line) {
+    var parts = line.split(/\t+|\s*\|\s*|\s{2,}/).map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length >= 2) return parts;
+    return ["File Name"].concat(line.replace(/^File Name\s*/i, "").split(/\s+/).filter(Boolean));
+  }
+  function renderDescription(html, title) {
+    var frag = document.createDocumentFragment();
+    var doc = new DOMParser().parseFromString("<div>" + (html || "") + "</div>", "text/html");
+    var tables = [];
+    // 1) Real HTML tables: rebuild safely from cell text.
+    doc.querySelectorAll("table").forEach(function (t) {
+      var rows = Array.prototype.map.call(t.querySelectorAll("tr"), function (tr) {
+        return Array.prototype.map.call(tr.querySelectorAll("th, td"), cellText);
+      }).filter(function (r) { return r.some(Boolean); });
+      if (!rows.length) { t.remove(); return; }
+      var hi = rows.findIndex(function (r) { return /^file name/i.test(r[0] || ""); });
+      if (hi < 0) hi = 0;
+      var headers = rows[hi], body = rows.slice(hi + 1);
+      var n = Math.max.apply(null, rows.map(function (r) { return r.length; }));
+      while (headers.length < n) headers.push("");
+      tables.push(buildTable(headers, body, title));
+      t.replaceWith("\n\n\u0001T" + (tables.length - 1) + "\u0001\n\n");
+    });
+    doc.querySelectorAll("br").forEach(function (b) { b.replaceWith("\n"); });
+    doc.querySelectorAll("p, li, div, h1, h2, h3, h4, h5, h6, tr").forEach(function (b) { b.append("\n\n"); });
+    var blocks = (doc.body.textContent || "").split(/\n\s*\n/)
+      .map(function (s) { return s.replace(/[  ]+/g, " ").replace(/^\s+|\s+$/g, ""); }).filter(Boolean);
+    // 2) Plain-text tables: a "File Name …" line followed by file rows.
+    for (var i = 0; i < blocks.length; i++) {
+      var b = blocks[i], tm = b.match(/^\u0001T(\d+)\u0001$/);
+      if (tm) { frag.appendChild(tables[+tm[1]]); continue; }
+      var lines = b.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+      var fi = lines.findIndex(function (l) { return /^file name\b/i.test(l); });
+      if (fi < 0) { frag.appendChild(el("p", { text: b.replace(/\s+/g, " ") })); continue; }
+      if (fi > 0) frag.appendChild(el("p", { text: lines.slice(0, fi).join(" ") }));
+      var headers = headerCells(lines[fi]), rows = [];
+      var pending = lines.slice(fi + 1);
+      // rows may be in this block or the following blocks
+      for (;;) {
+        while (pending.length) {
+          var r = splitRow(pending[0], headers.length);
+          if (!r) break;
+          rows.push(r); pending.shift();
+        }
+        if (pending.length || i + 1 >= blocks.length) break;
+        var next = blocks[i + 1];
+        if (/^\u0001T/.test(next) || !splitRow(next.split("\n")[0].trim(), headers.length)) break;
+        pending = next.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+        i++;
+      }
+      if (rows.length) frag.appendChild(buildTable(headers, rows, title));
+      else frag.appendChild(el("p", { text: lines[fi] }));
+      if (pending.length) frag.appendChild(el("p", { text: pending.join(" ") }));
+    }
+    return frag;
+  }
+
+  function fmtDate(s) {
+    if (!s) return "";
+    var parts = s.split("-");
+    var d = new Date(Date.UTC(+parts[0], (parts[1] || 1) - 1, parts[2] || 1));
+    if (isNaN(d)) return s;
+    var opts = { year: "numeric", timeZone: "UTC" };
+    if (parts[1]) opts.month = "long";
+    if (parts[2]) opts.day = "numeric";
+    return d.toLocaleDateString(undefined, opts);
+  }
+  function fmtSize(b) {
+    if (b == null) return "";
+    var u = ["bytes", "KB", "MB", "GB", "TB"], i = 0;
+    while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; }
+    return (i ? b.toFixed(1) : b) + " " + u[i];
+  }
+  function pick(obj, path) {
+    return path.split(".").reduce(function (o, k) { return o == null ? undefined : o[k]; }, obj);
+  }
+
+  /* ---------- normalise both InvenioRDM and legacy record shapes ---------- */
+  function normalise(r) {
+    var m = r.metadata || {};
+    var creators = (m.creators || []).map(function (c) {
+      return (c.person_or_org && c.person_or_org.name) || c.name || "";
+    }).filter(Boolean);
+    var rt = m.resource_type || {};
+    var type = (rt.title && (rt.title.en || rt.title)) || rt.title || rt.type || "";
+    if (typeof type !== "string") type = rt.id || "";
+    var keywords = (m.subjects || []).map(function (s) { return s.subject || s.id; }).filter(Boolean);
+    if (!keywords.length && m.keywords) keywords = m.keywords;
+    var doi = pick(r, "pids.doi.identifier") || r.doi || m.doi || "";
+    var license = "";
+    if (m.rights && m.rights.length) license = (m.rights[0].title && (m.rights[0].title.en || m.rights[0].title)) || m.rights[0].id || "";
+    else if (m.license) license = m.license.id || m.license;
+    var access = pick(r, "access.record") ? (pick(r, "access.files") === "restricted" ? "Files restricted" : "Open access") :
+                 (m.access_right ? m.access_right.charAt(0).toUpperCase() + m.access_right.slice(1) + " access" : "");
+    var files = [];
+    var entries = pick(r, "files.entries");
+    if (entries && typeof entries === "object") {
+      Object.keys(entries).forEach(function (k) {
+        var f = entries[k];
+        files.push({ name: f.key || k, size: f.size, url: pick(f, "links.content") || (r.links && r.links.self_html ? r.links.self_html.replace(/\/?$/, "/files/") + encodeURIComponent(f.key || k) : "") });
+      });
+    } else if (Array.isArray(r.files)) {
+      r.files.forEach(function (f) { files.push({ name: f.key || f.filename, size: f.size, url: pick(f, "links.self") || pick(f, "links.download") || "" }); });
+    }
+    return {
+      title: m.title || r.title || "Untitled record",
+      date: m.publication_date || r.created || "",
+      type: type, creators: creators, keywords: keywords,
+      description: m.description || "",
+      doi: doi, license: typeof license === "string" ? license : "",
+      access: access, version: m.version || "",
+      url: pick(r, "links.self_html") || pick(r, "links.html") || ("https://zenodo.org/records/" + r.id),
+      views: pick(r, "stats.this_version.unique_views") || pick(r, "stats.unique_views"),
+      downloads: pick(r, "stats.this_version.unique_downloads") || pick(r, "stats.unique_downloads"),
+      files: files
+    };
+  }
+
+  /* ---------- rendering ---------- */
+  function renderRecord(rec, idx) {
+    var headingId = "rec-" + idx;
+    var meta = el("ul", { class: "meta", "aria-label": "Record details" });
+    if (rec.type) meta.appendChild(el("li", { text: rec.type }));
+    if (rec.date) meta.appendChild(el("li", {}, ["Published ", el("time", { datetime: rec.date, text: fmtDate(rec.date) })]));
+    if (rec.version) meta.appendChild(el("li", { text: "Version " + rec.version }));
+    if (rec.access) meta.appendChild(el("li", { text: rec.access }));
+    if (rec.license) meta.appendChild(el("li", { text: "License: " + rec.license }));
+    if (rec.views != null) meta.appendChild(el("li", { text: rec.views.toLocaleString() + " views" }));
+    if (rec.downloads != null) meta.appendChild(el("li", { text: rec.downloads.toLocaleString() + " downloads" }));
+
+    var article = el("article", { class: "rec", "aria-labelledby": headingId }, [
+      el("h2", { id: headingId }, [el("a", { href: rec.url, text: rec.title })]),
+      meta
+    ]);
+    if (rec.creators.length) {
+      var names = rec.creators.length > 8 ? rec.creators.slice(0, 8).join("; ") + "; and " + (rec.creators.length - 8) + " more" : rec.creators.join("; ");
+      article.appendChild(el("p", { class: "creators" }, [el("span", { class: "sr-only", text: "Creators: " }), names]));
+    }
+    var descFrag = renderDescription(rec.description, rec.title);
+    if (descFrag.childNodes.length) {
+      var desc = el("div", { class: "desc" }, [descFrag]);
+      article.appendChild(el("details", {}, [el("summary", {}, ["Description", el("span", { class: "sr-only", text: " of " + rec.title })]), desc]));
+    }
+    if (rec.files.length) {
+      var ul = el("ul", { class: "files" });
+      rec.files.forEach(function (f) {
+        var label = f.name + (f.size != null ? " (" + fmtSize(f.size) + ")" : "");
+        ul.appendChild(el("li", {}, [f.url ? el("a", { href: f.url, text: label }) : label]));
+      });
+      article.appendChild(el("details", {}, [el("summary", {}, ["Files (" + rec.files.length + ")", el("span", { class: "sr-only", text: " for " + rec.title })]), ul]));
+    }
+    if (rec.keywords.length) {
+      var chips = el("ul", { class: "chips", "aria-label": "Keywords" });
+      rec.keywords.slice(0, 12).forEach(function (k) { chips.appendChild(el("li", { text: k })); });
+      article.appendChild(chips);
+    }
+    var actions = el("div", { class: "actions" }, [
+      el("a", { href: rec.url }, ["View on Zenodo", el("span", { class: "sr-only", text: ": " + rec.title })])
+    ]);
+    if (rec.doi) actions.appendChild(el("a", { href: "https://doi.org/" + rec.doi }, [el("abbr", { title: "Digital Object Identifier", text: "DOI" }), ": " + rec.doi]));
+    article.appendChild(actions);
+    return el("li", {}, [article]);
+  }
+
+  function renderPager(total) {
+    var pages = Math.max(1, Math.ceil(Math.min(total, 10000) / PAGE_SIZE));
+    els.pager.innerHTML = "";
+    if (pages <= 1) { els.pager.hidden = true; return; }
+    var ul = el("ul");
+    function link(p, label, extra) {
+      var a = el("a", { href: hashFor(Object.assign({}, state, { page: p })), "data-page": p, "aria-label": extra || ("Page " + p) }, [label]);
+      if (p === state.page) a.setAttribute("aria-current", "page");
+      return el("li", {}, [a]);
+    }
+    if (state.page > 1) ul.appendChild(link(state.page - 1, "Previous", "Previous page"));
+    var set = {}; [1, pages, state.page - 1, state.page, state.page + 1].forEach(function (p) { if (p >= 1 && p <= pages) set[p] = true; });
+    var list = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+    list.forEach(function (p, i) {
+      if (i && p - list[i - 1] > 1) ul.appendChild(el("li", {}, [el("span", { "aria-hidden": "true", text: "…" })]));
+      ul.appendChild(link(p, String(p)));
+    });
+    if (state.page < pages) ul.appendChild(link(state.page + 1, "Next", "Next page"));
+    els.pager.appendChild(ul);
+    els.pager.hidden = false;
+  }
+
+  function populateTypes(aggs) {
+    if (typesLoaded || !aggs) return;
+    var buckets = pick(aggs, "resource_type.buckets") || pick(aggs, "type.buckets") || [];
+    if (!buckets.length) return;
+    buckets.forEach(function (b) {
+      var label = b.label || b.key;
+      els.type.appendChild(el("option", { value: b.key, text: label + " (" + b.doc_count + ")" }));
+    });
+    els.type.value = state.type;
+    typesLoaded = true;
+  }
+
+  /* ---------- URL state ---------- */
+  function hashFor(s) {
+    var p = new URLSearchParams();
+    if (s.q) p.set("q", s.q);
+    if (s.type) p.set("type", s.type);
+    if (s.sort && s.sort !== "newest") p.set("sort", s.sort);
+    if (s.page > 1) p.set("page", s.page);
+    var str = p.toString();
+    return str ? "#" + str : "#";
+  }
+  function readHash() {
+    var p = new URLSearchParams(location.hash.replace(/^#/, ""));
+    state.q = p.get("q") || "";
+    state.type = p.get("type") || "";
+    state.sort = p.get("sort") || "newest";
+    state.page = Math.max(1, parseInt(p.get("page"), 10) || 1);
+    els.q.value = state.q; els.sort.value = state.sort;
+    if (typesLoaded) els.type.value = state.type;
+  }
+
+  /* ---------- data loading ---------- */
+  function load(moveFocus) {
+    var my = ++reqId;
+    var params = new URLSearchParams({ size: PAGE_SIZE, page: state.page, sort: state.sort });
+    if (state.q) params.set("q", state.q);
+    if (state.type) params.set("resource_type", state.type);
+    els.results.setAttribute("aria-busy", "true");
+    els.error.hidden = true;
+    els.status.textContent = "Loading records…";
+
+    fetch(API + "/communities/" + COMMUNITY + "/records?" + params.toString(), { headers: { Accept: "application/json" } })
+      .then(function (res) { if (!res.ok) throw new Error("Zenodo responded with status " + res.status); return res.json(); })
+      .then(function (data) {
+        if (my !== reqId) return;
+        populateTypes(data.aggregations);
+        var hits = pick(data, "hits.hits") || [];
+        var total = pick(data, "hits.total");
+        if (typeof total === "object" && total) total = total.value;
+        total = total || 0;
+        els.results.innerHTML = "";
+        hits.map(normalise).forEach(function (rec, i) { els.results.appendChild(renderRecord(rec, (state.page - 1) * PAGE_SIZE + i + 1)); });
+        var start = (state.page - 1) * PAGE_SIZE + 1, end = start + hits.length - 1;
+        var msg = total === 0 ? "No records found" + (state.q ? " for “" + state.q + "”" : "") + "." :
+          "Showing " + start + "–" + end + " of " + total.toLocaleString() + " record" + (total === 1 ? "" : "s") +
+          (state.q ? " matching “" + state.q + "”" : "") + ".";
+        els.status.textContent = msg;
+        els.heading.textContent = "Results, page " + state.page;
+        renderPager(total);
+        els.results.setAttribute("aria-busy", "false");
+        if (moveFocus) els.heading.focus();
+      })
+      .catch(function (err) {
+        if (my !== reqId) return;
+        els.results.setAttribute("aria-busy", "false");
+        els.status.textContent = "Records could not be loaded.";
+        els.error.innerHTML = "";
+        els.error.appendChild(el("p", { text: "Couldn’t reach Zenodo: " + err.message + ". Check your connection and try again, or browse the community directly on Zenodo." }));
+        var retry = el("button", { type: "button", text: "Try again" });
+        retry.addEventListener("click", function () { load(true); });
+        els.error.appendChild(retry);
+        els.error.hidden = false;
+      });
+  }
+
+  function loadCommunity() {
+    fetch(API + "/communities/" + COMMUNITY, { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) {
+        if (!c || !c.metadata) return;
+        if (c.metadata.title) { $("community-title").textContent = c.metadata.title; document.title = c.metadata.title + " – Records"; }
+        var d = htmlToParagraphs(c.metadata.description || "")[0];
+        if (d) $("community-desc").textContent = d;
+        var logo = pick(c, "links.logo");
+        if (logo) { var img = $("logo"); img.src = logo; img.onerror = function () { img.hidden = true; }; img.hidden = false; }
+      })
+      .catch(function () {});
+  }
+
+  /* ---------- events ---------- */
+  els.form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var next = { q: els.q.value.trim(), type: els.type.value, sort: els.sort.value, page: 1 };
+    var h = hashFor(next);
+    if (location.hash === h || (h === "#" && !location.hash)) { Object.assign(state, next); load(true); }
+    else location.hash = h;
+  });
+  els.type.addEventListener("change", function () { els.form.requestSubmit ? els.form.requestSubmit() : els.form.dispatchEvent(new Event("submit")); });
+  els.sort.addEventListener("change", function () { els.form.requestSubmit ? els.form.requestSubmit() : els.form.dispatchEvent(new Event("submit")); });
+  window.addEventListener("hashchange", function () { readHash(); load(true); });
+
+  readHash();
+  loadCommunity();
+  load(false);
+})();
+</script>
+</body>
+</html>
